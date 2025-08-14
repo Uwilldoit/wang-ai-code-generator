@@ -40,3 +40,4 @@ public class ThrowUtils {
         throwIf(condition, new BusinessException(errorCode, message));
     }
 }
+

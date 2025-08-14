@@ -3,6 +3,7 @@ package com.wang.wangaicodegenerator.exception;
 
 import com.wang.wangaicodegenerator.common.BaseResponse;
 import com.wang.wangaicodegenerator.common.ResultUtils;
+import io.swagger.v3.oas.annotations.Hidden;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
  * createTime:2025/1/21---15:49
  * description:
  */
+@Hidden
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
@@ -27,7 +29,7 @@ public class GlobalExceptionHandler {
         log.error("RuntimeException", e);
         return ResultUtils.error(ErrorCode.SYSTEM_ERROR, "系统错误");
     }
-
 }
+
 
 
