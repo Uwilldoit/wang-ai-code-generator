@@ -1,4 +1,4 @@
-package com.wang.wangaicodegenerator.ai.core.parser;
+package com.wang.wangaicodegenerator.core.parser;
 
 /**
  * @author: Fugitive Mr.Wang

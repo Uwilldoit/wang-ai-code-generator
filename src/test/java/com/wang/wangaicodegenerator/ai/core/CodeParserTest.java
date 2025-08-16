@@ -2,6 +2,7 @@ package com.wang.wangaicodegenerator.ai.core;
 
 import com.wang.wangaicodegenerator.ai.model.HtmlCodeResult;
 import com.wang.wangaicodegenerator.ai.model.MultiFileCodeResult;
+import com.wang.wangaicodegenerator.core.CodeParser;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;

@@ -1,4 +1,4 @@
-package com.wang.wangaicodegenerator.ai.core;
+package com.wang.wangaicodegenerator.core;
 
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.IdUtil;

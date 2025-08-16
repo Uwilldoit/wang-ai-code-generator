@@ -1,4 +1,4 @@
-package com.wang.wangaicodegenerator.ai.core;
+package com.wang.wangaicodegenerator.core;
 
 import com.wang.wangaicodegenerator.ai.model.HtmlCodeResult;
 import com.wang.wangaicodegenerator.ai.model.MultiFileCodeResult;
