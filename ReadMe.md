@@ -179,3 +179,82 @@ void saveFiles(MultiFileCodeResult result, String baseDirPath) {}
 - 执行器模式： 提供统一的执行入口，根据生成类型执行不同的操作
 - 策略模式：每种模式对应的解析方法单独作为一个类来维护
 - 模板方法模式：抽象模板类定义了通用的文件保存流程，子类可以有自己的实现（比如多文件生成模式需要保存3个文件，而原生HTML模式只要保存1个文件）
+
+
+
+
+
+## 应用模块
+
+### 1、需求分析
+
+之前实现的是单机版本，用户只能在本地生成代码文件，现在我们要将其升级为平台化系统，这意味需要支持多用户、应用管理、在线部署等功能。
+
+需要的具体功能包括：
+
+- 用户基础功能
+- 创建应用
+- 编辑应用信息
+- 删除自己的应用
+- 查看应用详细
+- 分页查询自己的应用列表
+- 分页查看精选应用列表
+- 用户高级功能
+- 实时查看应用效果（⭐）
+- 应用部署（⭐）
+- 管理功能
+- 管理所有应用（删改查）
+- 设置精选应用
+
+
+
+### 2、方案设计
+
+平台化改造的核心在于**建立完整的应用生命周期管理体系**。
+
+#### 工作流程
+
+用户在主页输入提示词后，系统会创建一个应用记录，然后跳转到对话页面与AI交互生成网站。生成完成后，用户可以预览效果，满意后进行部署，让网站真正对外提供服务。
+
+这个流程看似简单，但涉及到数据存储、权限控制、文件管理、网站部署等多个技术环节。
+
+
+
+#### 库表设计
+
+应用表是整个项目的核心，需要记录应用的基本信息、生成配置、部署信息等。其中最关键的是deployKey字段，由于每个网站应用文件的部署都是隔离的（想象成沙箱），需要用唯一字段来区分，可以作为应用的存储和访问路径，而且为了便于访问，每个应用的访问路径不能太长。
+
+这里我们参考美团NoCode 等平台的设计，将deployKey设置为6位英文数字组成的唯一标识符。
+
+
+
+```sql
+-- 应用表
+create table app
+(
+    id           bigint auto_increment comment 'id' primary key,
+    appName      varchar(256)                       null comment '应用名称',
+    cover        varchar(512)                       null comment '应用封面',
+    initPrompt   text                               null comment '应用初始化的 prompt',
+    codeGenType  varchar(64)                        null comment '代码生成类型（枚举）',
+    deployKey    varchar(64)                        null comment '部署标识',
+    deployedTime datetime                           null comment '部署时间',
+    priority     int      default 0                 not null comment '优先级',
+    userId       bigint                             not null comment '创建用户id',
+    editTime     datetime default CURRENT_TIMESTAMP not null comment '编辑时间',
+    createTime   datetime default CURRENT_TIMESTAMP not null comment '创建时间',
+    updateTime   datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
+    isDelete     tinyint  default 0                 not null comment '是否删除',
+    UNIQUE KEY uk_deployKey (deployKey), -- 确保部署标识唯一
+    INDEX idx_appName (appName),         -- 提升基于应用名称的查询性能
+    INDEX idx_userId (userId)            -- 提升基于用户 ID 的查询性能
+) comment '应用' collate = utf8mb4_unicode_ci;
+
+```
+
+说明：
+
+1. `priority` 优先级字段：我们约定99表示精选应用，这样可以在主页展示高质量的应用，避免用户看到大量测试内容。为什么用数字而不是用枚举呢？因为这样更利于扩展，比如约定999表示置顶，还可以根据数字灵活调整各个应用的具体展示顺序。
+2. 添加索引：给deployKey、appName、userId三个经常用于作为查询条件的字段增加索引，提高查询性能。
+
+注意，暂时不考虑将应用代码直接保存到数据库字段中，而是保存在文件系统里，这样可以**避免数据库和文件存储不一致**的问题，也便于后续扩展到对象存储等方案。
