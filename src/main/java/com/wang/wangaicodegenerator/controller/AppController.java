@@ -2,6 +2,7 @@ package com.wang.wangaicodegenerator.controller;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONUtil;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.wang.wangaicodegenerator.ai.model.enums.CodeGenTypeEnum;
@@ -26,16 +27,23 @@ import com.wang.wangaicodegenerator.service.AppService;
 import com.wang.wangaicodegenerator.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.http.MediaType;
+import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 应用接口
+ * @author Fugitive Mr.Wang
  */
 @RestController
 @RequestMapping("/app")
@@ -47,6 +55,32 @@ public class AppController {
 
     @Resource
     private UserService userService;
+
+
+    @GetMapping(value = "/chat/gen/code", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<ServerSentEvent<String>> chatToGenCode(@RequestParam String message,
+                                      @RequestParam Long appId,
+                                      HttpServletRequest request) {
+        // 参数校验
+        ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用ID无效");
+        ThrowUtils.throwIf(StrUtil.isBlank(message), ErrorCode.PARAMS_ERROR, "用户消息不能为空");
+        // 获取当前登录用户
+        User loginUser = userService.getLoginUser(request);
+        // 调用服务生成代码（流式）
+        Flux<String> stringFlux = appService.chatToGenCode(message, appId, loginUser);
+        return stringFlux.map(chunk->{
+            //将内容包装成JSON对象
+            Map<String,String> wrapper = Map.of("d",chunk);
+            String jsonStr = JSONUtil.toJsonStr(wrapper);
+            return ServerSentEvent.<String>builder().data(jsonStr).build();
+        }).concatWith(Mono.just(
+                //发送结束事件
+                ServerSentEvent.<String>builder().event("done").data("").build()
+        ));
+    }
+
+
+
 
     // region 用户操作
 
@@ -298,6 +332,9 @@ public class AppController {
         // 获取封装类
         return ResultUtils.success(appService.getAppVO(app));
     }
+
+
+
 
 
     // endregion

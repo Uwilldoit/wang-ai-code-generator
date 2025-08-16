@@ -26,11 +26,11 @@ public class CodeFileSaverExecutor {
      * @param codeGenType 代码生成类型枚举值，决定代码的生成方式
      * @return 生成的代码文件对象
      */
-    public static File execute(Object codeResult, CodeGenTypeEnum codeGenType) {
+    public static File execute(Object codeResult, CodeGenTypeEnum codeGenType,Long appId) {
         // 根据代码生成类型执行相应的代码解析和保存操作
         return switch (codeGenType){
-            case HTML -> HTML_CODE_FILE_SAVER.saveCode((HtmlCodeResult) codeResult);
-            case MULTI_FILE -> MULTI_FILE_CODE_FILE_SAVER.saveCode((MultiFileCodeResult) codeResult);
+            case HTML -> HTML_CODE_FILE_SAVER.saveCode((HtmlCodeResult) codeResult,appId);
+            case MULTI_FILE -> MULTI_FILE_CODE_FILE_SAVER.saveCode((MultiFileCodeResult) codeResult,appId);
             default -> throw new BusinessException(ErrorCode.SYSTEM_ERROR,"不支持的代码生成类型："+codeGenType);
         };
     }

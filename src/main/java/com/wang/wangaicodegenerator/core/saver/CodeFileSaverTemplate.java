@@ -27,11 +27,11 @@ public abstract class CodeFileSaverTemplate<T> {
      * @param result 要保存的代码结果对象
      * @return 保存代码的目录文件对象
      */
-    public final File saveCode(T result) {
+    public final File saveCode(T result,Long appId) {
         // 1、验证输入参数的有效性
         validateInput(result);
         // 2、构建唯一的目录路径
-        String baseDirPath = buildUniqueDir();
+        String baseDirPath = buildUniqueDir(appId);
         // 3、保存文件到指定目录
         savesFiles(result, baseDirPath);
         // 4、返回目录文件的对象
@@ -48,7 +48,10 @@ public abstract class CodeFileSaverTemplate<T> {
      *
      * @return String 返回创建的唯一目录的完整路径
      */
-    protected final String buildUniqueDir() {
+    protected final String buildUniqueDir(Long appId) {
+        if (appId == null){
+            throw new BusinessException(ErrorCode.PARAMS_ERROR,"appId不能为空");
+        }
         // 获取代码类型值
         String codeType = getCodeType().getValue();
         // 使用代码类型和雪花ID生成唯一目录名称
