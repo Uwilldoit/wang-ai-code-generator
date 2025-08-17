@@ -316,3 +316,83 @@ create table app
 
 
 
+## 对话历史模块
+
+为AI零代码应用生成平台添加对话历史管理功能， 让用户能够查看和管理历史对话记录。
+
+### 1、需求分析
+
+前面我们已经实现了AI生成应用的核心功能，但是每个对话都是独立的，无法让用户在原有的基础上进行版本迭代及优化。因此，我们需要实现以下需求：
+
+1. **对话历史的持久化存储**：用户发送消息时，需要保存用户消息；AI成功回复后需要保存AI消息。即使AI回复失败，也要记录错误信息，确保对话的完整性。
+2. **应用级别的数据隔离**：每个应用的对话历史都是独立的。删除应用时，需要关联删除该应用的所有对话历史，避免数据冗余。
+3. **对话历史查询**： 支持分页查看某个应用的对话历史，需要区分用户和AI消息。类似聊天软件的消息加载机制，每次加载最新10条消息，支持向前加载更多历史记录（仅应用创建者和管理员可见）
+   详细来说，进入应用页面﻿时，前端根据应用 id 先加载一次对话历史﻿消息，关联查询最新 10 条消息。如果存在‎历史对话，直接展示；如果没有历史记录，才自⁠动发送初始化提示词。这样就解决了之前浏览别‍人的应用时意外触发对话的问题。
+4. **管理对话历史**：管理员可以查看所有应用的对话历史，按时间降序排序，便于内容监管。
+
+
+
+### 2、方案设计
+
+#### 分页查询
+
+##### 传统分页查询问题
+
+对于对话历史（聊天记录）的分页查询，不建议使用传统分页查询。Why？在传统分页中，数据通常是基于页码或偏移量进行加载的。如果数据在分页过程中发生了变化，比如插入或删除数据，用户看到的分页数据可能会不一致，导致用户错过或重复某些数据。 并且传统的offset 分页方式在处理大量的对话数据时存在严重的性能问题。假如一个热门应用积累了十万条对话记录后，如果用户想查看较早的历史记录，执行`Liimit 100000,10`就会出现**深度分页**问题，查询会非常缓慢。因为数据库需要先扫面和跳过前面100000条数据才能返回用户真正需要的10条数据。随着offset值的增大，查询性能会线性下降，在高并发场景下很容易成为系统瓶颈。
+
+##### 游标查询
+
+为了解决这些问题，可以使用游标分页。使用一个游标来跟着分页位置，而不是基于页码，**每次请求从上一次的游标开始加载数据**。一般会选择数据记录的唯一标识符（主键）、时间戳或者具有排序能力的字段作为游标。
+
+建议优先使用id作为游标 ，因为主键性能最优且不重复。但是针对我们的场景，按时间排序是核心需求，而且同一个appId下时间重复的可能性极低，所以直接使用对话历史的创建时间createTime作为游标是完全可行的。不需要额外带上对话历史的id作为复合游标，简化了游标查询的逻辑。如：
+
+```sql
+SELECT * FROM chat_history 
+WHERE appId = 123 AND createTime < '2025-07-29 10:30:00'
+ORDER BY createTime DESC 
+LIMIT 10;
+```
+
+而且还可以给appId和createTime增加复合索引，进一步提高检索效率。这样执行过程就变成了：
+
+1. 直接定位到 (appId=123, createTime<'2025-07-29 10:30:00') 的索引位置
+2. 顺序读取 10 条记录
+3. 完成查询
+
+
+
+### 库表设计
+
+#### 1、核心设计
+
+```sql
+-- 对话历史表
+create table chat_history
+(
+    id          bigint auto_increment comment 'id' primary key,
+    message     text                               not null comment '消息',
+    messageType varchar(32)                        not null comment 'user/ai',
+    appId       bigint                             not null comment '应用id',
+    userId      bigint                             not null comment '创建用户id',
+    createTime  datetime default CURRENT_TIMESTAMP not null comment '创建时间',
+    updateTime  datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
+    isDelete    tinyint  default 0                 not null comment '是否删除',
+    INDEX idx_appId (appId),                       -- 提升基于应用的查询性能
+    INDEX idx_createTime (createTime),             -- 提升基于时间的查询性能
+    INDEX idx_appId_createTime (appId, createTime) -- 游标查询核心索引
+) comment '对话历史' collate = utf8mb4_unicode_ci;
+
+```
+
+#### 2、扩展设计
+
+1. 可以按需添加 `parentId` 字段，将 AI 消息和对应的用户提示词进行关联，便于生成失败时的重试、或者用户手动重新生成。 
+
+   ```sql
+   parentId   bigint  null comment '父消息id（用于上下文关联）',
+   ```
+
+   ​				
+
+2. 如果需要保存每个版本的代码文件，还可以添加 `fileList` 字段，结构为 JSON 数组格式，这样每条消息就对应一个代码版本。不过代码文件很大时，存到数据库里不是一个合适的选择。
+

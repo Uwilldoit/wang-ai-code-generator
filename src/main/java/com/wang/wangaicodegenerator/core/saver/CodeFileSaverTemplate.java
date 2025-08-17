@@ -55,7 +55,7 @@ public abstract class CodeFileSaverTemplate<T> {
         }
         // 获取代码类型值
         String codeType = getCodeType().getValue();
-        // 使用代码类型和雪花ID生成唯一目录名称
+        // 使用代码类型和appId生成唯一目录名称
         String uniqueDirName = StrUtil.format("{}_{}", codeType, appId);
         // 构建完整目录路径
         String dirPath = FILE_SAVE_ROOT_DIR + File.separator + uniqueDirName;
