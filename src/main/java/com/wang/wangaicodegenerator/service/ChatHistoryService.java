@@ -7,6 +7,7 @@ import com.wang.wangaicodegenerator.model.dto.chatHistory.ChatHistoryQueryReques
 import com.wang.wangaicodegenerator.model.entity.ChatHistory;
 import com.wang.wangaicodegenerator.model.entity.User;
 import com.wang.wangaicodegenerator.model.vo.ChatHistoryVO;
+import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -17,6 +18,16 @@ import java.util.List;
  * @author Fugitive Mr.Wang
  */
 public interface ChatHistoryService extends IService<ChatHistory> {
+
+    /**
+     * 将聊天历史记录加载到内存中
+     *
+     * @param appId      应用ID，用于标识特定应用的聊天记录
+     * @param chatMemory 聊天记忆对象，用于存储加载的聊天历史
+     * @param maxCount   最大加载数量，限制加载的历史记录条数
+     * @return 实际加载到内存中的聊天记录数量
+     */
+    int loadChatHistoryToMemory(Long appId, MessageWindowChatMemory chatMemory, int maxCount);
 
     /**
      * 分页查询应用的聊天历史记录

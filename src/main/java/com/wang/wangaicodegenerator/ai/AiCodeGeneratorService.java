@@ -2,7 +2,9 @@ package com.wang.wangaicodegenerator.ai;
 
 import com.wang.wangaicodegenerator.ai.model.HtmlCodeResult;
 import com.wang.wangaicodegenerator.ai.model.MultiFileCodeResult;
+import dev.langchain4j.service.MemoryId;
 import dev.langchain4j.service.SystemMessage;
+import dev.langchain4j.service.UserMessage;
 import reactor.core.publisher.Flux;
 
 /**
@@ -32,7 +34,6 @@ public interface AiCodeGeneratorService {
     MultiFileCodeResult generateMultiFileCode(String userMessage);
 
 
-
     /**
      * 生成 HTML 代码(流式)
      *
@@ -50,5 +51,7 @@ public interface AiCodeGeneratorService {
      */
     @SystemMessage(fromResource = "prompt/codegen-multi-file-system-prompt.txt")
     Flux<String> generateMultiFileCodeStream(String userMessage);
+
+
 }
 
