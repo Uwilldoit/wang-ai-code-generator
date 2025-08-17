@@ -4,6 +4,7 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
 import com.wang.wangaicodegenerator.ai.model.enums.CodeGenTypeEnum;
+import com.wang.wangaicodegenerator.constant.AppConstant;
 import com.wang.wangaicodegenerator.exception.BusinessException;
 import com.wang.wangaicodegenerator.exception.ErrorCode;
 
@@ -20,7 +21,7 @@ public abstract class CodeFileSaverTemplate<T> {
     /**
      * 文件保存根目录
      */
-    protected static final String FILE_SAVE_ROOT_DIR = System.getProperty("user.dir") + "/tmp/code_output";
+    protected static final String FILE_SAVE_ROOT_DIR = AppConstant.CODE_OUTPUT_ROOT_DIR;
 
     /**
      * 模板方法：保存代码的标准流程
@@ -55,7 +56,7 @@ public abstract class CodeFileSaverTemplate<T> {
         // 获取代码类型值
         String codeType = getCodeType().getValue();
         // 使用代码类型和雪花ID生成唯一目录名称
-        String uniqueDirName = StrUtil.format("{}_{}", codeType, IdUtil.getSnowflakeNextIdStr());
+        String uniqueDirName = StrUtil.format("{}_{}", codeType, appId);
         // 构建完整目录路径
         String dirPath = FILE_SAVE_ROOT_DIR + File.separator + uniqueDirName;
         // 创建目录
