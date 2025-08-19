@@ -121,7 +121,7 @@ public class AppController {
         //应用名称暂时为initPrompt的前12个字符
         app.setAppName(initPrompt.substring(0,Math.min(initPrompt.length(),12)));
         //暂时设置为多文件生成
-        app.setCodeGenType(CodeGenTypeEnum.MULTI_FILE.getValue());
+        app.setCodeGenType(CodeGenTypeEnum.VUE_PROJECT.getValue());
         // 保存应用
         boolean result = appService.save(app);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);

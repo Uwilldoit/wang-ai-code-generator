@@ -26,7 +26,7 @@ import java.time.LocalDateTime;
  * @author Fugitive Mr.Wang
  */
 @RestController
-@RequestMapping("/chat/history")
+@RequestMapping("/chatHistory")
 @Slf4j
 public class ChatHistoryController {
 

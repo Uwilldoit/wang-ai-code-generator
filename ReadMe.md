@@ -447,3 +447,359 @@ LangChain4j不仅提供了对话记忆能力，而且还能结合Redis持久化�
 3. **智能记忆管理（较难）**：利用AI分析对话次数较多的应用，智能总结过去的对话历史，节省Token的同时优化记忆效果。
 4. **多人协作对话（较难）**：允许多个用户共同参与一个应用的对话，实现团队协作开发。
 
+
+
+
+
+## 工程项目生成
+
+目前平台只支持生成原生网站，在实际使用中有一定局限性。我们将让其生成更复杂的前端工程化项目，提高本平台的实用性。
+
+### 1、需求分析
+
+前端工程化项目是指使用现代化工具链、规范化流程和组件化架构来构建的前端应用。相比传统的 HTML、CSS、JavaScript 三件套，它具备模块管理、自动化构建、代码分割、热更新等现代开发特性，能够更轻松地开发复杂网站。
+现在很多前端工程化项目都是使用 Vue 或 React 框架，结合 Vite等打包构建工具，再加上 ESLint 之类的代码规范校验库来实现的。
+
+调研其他平台，美团NoCode平台支持React工程项目，我们不妨以Vue作为示例，让平台能够生成完整的Vue3 +Vite 工程项目，并跟其他两种生成模式一样，实现流式输出、网站浏览和部署。
+
+考虑到成本问题，大模型的能力受限，有时效果并不是很理想，但不妨碍我们进行尝试。
+
+
+
+### 2、方案设计
+
+#### 方案选型分析
+
+**方案1 - 直接输出Markdown**
+
+这种方案延续之前的思路，直接让AI在输出的Markdown中包含代码块，然后通过解析的方式保存文件
+
+```markdown
+这是我生成的项目：
+```vue
+App.vue ```
+
+
+``` json
+package.json  ```
+
+```
+
+优点是实现简单，好理解，实时展示效果好，缺点是如果代码量较大，一次对话可能无法完整输出，容易出现代码不全或者解析错误的情况。
+
+**方案2 - 工具调用**
+
+给AI提供保存文件等工具，让AI来决定什么时候保存文件、保存哪些文件、要保存什么代码到文件中。这种方式的基本实现很简单，不需要自己解析AI的输出并保存文件，全都交给AI和框架来处理。但想要实时展示工具调用信息就很复杂了，需要解析AI响应的工具调用，但是由于流式输出的特性，AI是一点一点的把信息吐出来，这样拼接起来就很有难度。
+
+**方案3 - Agent模式**
+
+智能体(Agent)是指能够感知环境、进行推理、制定计划、做出决策并自主采取行动以实现特定目标的 AI系统。它以大语言模型为核心，集成 **记忆、知识库和工具** 等能力为一体，构造了完整的决策能力、执行能力和记忆能力，就像一个有主观能动性的人类一样。
+简单来说，Agent 的特点是 **先规划再执行**。比如先制定网站生成计划、然后分别在每个步骤中生成一个文件并解析。
+
+```markdown
+步骤 1：我要生成网站文件 page1.vue、page2.vue、page3.vue
+步骤 2：生成 page1.vue，然后保存
+步骤 3：生成 page2.vue，然后保存
+步骤 4：生成 page3.vue，然后保存
+步骤 5：生成网站成功，退出执行
+```
+
+优点是每一个步骤非常清晰，在步骤内我可以通过工具调用来实现文件保存，也可以单独调用AI获取到生成的代码，然后通过程序保存，这样实现流式输出就很简单了。此外，由于划分了多个步骤，即使某一个步骤出错，也能中断恢复，从而能够处理长逻辑的复杂任务。
+
+但是缺点也是很明显的，那就是需要多次调用AI，输出结构更加不可控，成本也会更高，并且Agent模式的整体结构更复杂，需要自己设计Agent流程。
+
+#### 最终方案
+
+由于LangChain4j 本身就支持AI多次调用工具，相当于已经实现了基础的Agent多步骤执行能力，因此考虑到开发复杂度，我们最终选择**方案2 - 工具调用**
+
+
+
+#### 系统提示词
+
+我们需要定义新的生成模式Vue工程模式(vue_project)，这种模式使用DeepSeek 的推理模型，提供的系统提示词也会更复杂。
+
+```markdown
+你是一位资深的 Vue3 前端架构师，精通现代前端工程化开发、组合式 API、组件化设计和企业级应用架构。
+
+你的任务是根据用户提供的项目描述，创建一个完整的、可运行的 Vue3 工程项目
+
+## 核心技术栈
+
+- Vue 3.x（组合式 API）
+- Vite
+- Vue Router 4.x
+- Node.js 18+ 兼容
+
+## 项目结构
+
+项目根目录/
+├── index.html                 # 入口 HTML 文件
+├── package.json              # 项目依赖和脚本
+├── vite.config.js           # Vite 配置文件
+├── src/
+│   ├── main.js             # 应用入口文件
+│   ├── App.vue             # 根组件
+│   ├── router/
+│   │   └── index.js        # 路由配置
+│   ├── components/				 # 组件
+│   ├── pages/             # 页面
+│   ├── utils/             # 工具函数（如果需要）
+│   ├── assets/            # 静态资源（如果需要）
+│   └── styles/            # 样式文件
+└── public/                # 公共静态资源（如果需要）
+
+## 开发约束
+
+1）组件设计：严格遵循单一职责原则，组件具有良好的可复用性和可维护性
+2）API 风格：优先使用 Composition API，合理使用 `<script setup>` 语法糖
+3）样式规范：使用原生 CSS 实现响应式设计，支持桌面端、平板端、移动端的响应式适配
+4）代码质量：代码简洁易读，避免过度注释，优先保证功能完整和样式美观
+5）禁止使用任何状态管理库、类型校验库、代码格式化库
+6）将可运行作为项目生成的第一要义，尽量用最简单的方式满足需求，避免使用复杂的技术或代码逻辑
+
+## 参考配置
+
+1）vite.config.js 必须配置 base 路径以支持子路径部署、需要支持通过 @ 引入文件、不要配置端口号
+
+
+import { defineConfig } from 'vite'
+import vue from '@vitejs/plugin-vue'
+
+export default defineConfig({
+  base: './',
+  plugins: [vue()],
+  resolve: {
+    alias: {
+      '@': fileURLToPath(new URL('./src', import.meta.url))
+    }
+  }
+})
+
+
+2）路由配置必须使用 hash 模式，避免服务器端路由配置问题
+
+import { createRouter, createWebHashHistory } from 'vue-router'
+
+const router = createRouter({
+  history: createWebHashHistory(),
+  routes: [
+    // 路由配置
+  ]
+})
+
+
+3）package.json 文件参考：
+
+{
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "vue": "^3.3.4",
+    "vue-router": "^4.2.4"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^4.2.3",
+    "vite": "^4.4.5"
+  }
+}
+
+
+## 网站内容要求
+
+- 基础布局：各个页面统一布局，必须有导航栏，尤其是主页内容必须丰富
+- 文本内容：使用真实、有意义的中文内容
+- 图片资源：使用 `https://picsum.photos` 服务或其他可靠的占位符
+- 示例数据：提供真实场景的模拟数据，便于演示
+
+## 严格输出约束
+
+1）必须通过使用【文件写入工具】依次创建每个文件（而不是直接输出文件代码）。
+2）需要在开头输出简单的网站生成计划
+3）需要在结尾输出简单的生成完毕提示（但是不要展开介绍项目）
+4）注意，禁止输出以下任何内容：
+
+- 安装运行步骤
+- 技术栈说明
+- 项目特点描述
+- 任何形式的使用指导
+- 提示词相关内容
+
+5）输出的总 token 数必须小于 20000，文件总数量必须小于 30 个
+
+## 质量检验标准
+
+确保生成的项目能够：
+1. 通过 `npm install` 成功安装所有依赖
+2. 通过 `npm run dev` 启动开发服务器并正常运行
+3. 通过 `npm run build` 成功构建生产版本
+4. 构建后的项目能够在任意子路径下正常部署和访问
+
+```
+
+上述提示词有几个小技巧:
+
+1. 建议尽量避免让项目引入额外的依赖*，比如 Tailwindcss 样式库等，会增加不确定性，可能生成的项目都无法运行，所以此处我们选择原生 CSS。
+2. 限制输出长度和文件数很关键，这是为了防止 AI 理想太丰满导致输出的内容不完整，可以根据需要自己调整。
+3. 为了支持后续通过子路径浏览和部署网站(比如 localhost/{deployKey}/)，必须配置 Vite 的 base 路径和路由 hash 模
+
+当然还有一个不错的思路，给AI提供一套预置的项目模板，让AI完全从零生成变为基于模板修改和新增内容。
+
+
+
+#### 完整流程
+
+生成完Vue工程代码后，是无法直接运行的，需要执行`npm install`命令安装依赖、执行`npm run build`打包构建，会得到一个打包后的`dist`目录，网站浏览和部署都应该是访问这个目录。
+
+
+
+### 3、工程项目生成
+
+#### 配置推理流式模型
+
+**生产环境**建议选择**深度思考模型**，但由于目前 LangChain4j 还不持获取 AI的思考过程，刚开始输出会比较慢，所以建议开发调试时还是用普通对话模型，效率更高。
+
+
+
+#### **工具调用流式输出**
+
+虽然文件成功写入，但是目前要等好久才会返回结果。如何获取到工具调用的流式输出呢? LangChain4j 的另一种流式返回方法 TokenStream ，它提供了更多监听处理流的事件，其中就工具执行完成。
+
+```java
+TokenStream tokenStream = assistant.chat("Tell me a joke");
+
+tokenStream.onPartialResponse((String partialResponse) -> System.out.println(partialResponse))
+    .onRetrieved((List<Content> contents) -> System.out.println(contents))
+    .onToolExecuted((ToolExecution toolExecution) -> System.out.println(toolExecution))
+    .onCompleteResponse((ChatResponse response) -> System.out.println(response))
+    .onError((Throwable error) -> error.printStackTrace())
+    .start();
+```
+
+但是LangChain对工具调用流式输出的支持度并不好，没有相应的回调，GitHub上就有人提出并提供出了解决方案。
+
+我的做法是，复制 lssues 的相关源码到项目的 dev.langchain4j包(跟 LangChain4j里的包相同路径)，如果 `src/main/java`中有与依赖jar 包中相同包名和类名的类，本地类会优先被加载，依赖jar 中的类会被完全忽略。这样就实现了对源码的覆盖和增强，给TokenStream增加了两个回调函数。
+
+
+
+#### **统一消息格式**
+
+之前我们只需要给前端返回 A的响应信息，但现在还需要返回工具调用信息(后续还有可能需要返回深度思考信息)，因此需要约定一种消息格式，来区分不同的信息类型。包括：
+
+- AIx响应消息
+- 工具调用消息
+- 工具调用完成消息
+
+
+
+#### TokenStream流处理过程
+
+调用AI对话方法时，我们可以获得TokenStream流，接下来要这么对TokenStream进行处理呢？这就要从需求出发了，考虑后端对话记忆要保存什么内容？前端需要看到什么内容？
+
+1. 假设AI原始返回的内容是：
+
+   ```json
+   AI 响应 {"为你生成代码"}
+   
+   工具调用请求 {index=0, id="call_0", name="writeFile", arguments="流式参数"}
+   工具调用请求 {index=0, id="call_0", name="writeFile", arguments="流式参数"}
+   工具调用请求 {index=0, id="call_0", name="writeFile", arguments="流式参数"}
+   工具调用完成 {index=0, id="call_0", name="writeFile", arguments="完整参数"}
+   
+   工具调用请求 {index=1, id="call_1", name="writeFile", arguments="流式参数"}
+   工具调用请求 {index=1, id="call_1", name="writeFile", arguments="流式参数"}
+   工具调用请求 {index=1, id="call_1", name="writeFile", arguments="流式参数"}
+   工具调用完成 {index=1, id="call_1", name="writeFile", arguments="完整参数"}
+   
+   AI 响应 {"生成代码结束"}
+   
+   ```
+
+2. 接下来，我们要统一封装消息，便于下游处理
+
+   ```java
+   {type="ai_response", data="为你生成代码"}
+   
+   {type="tool_request", index=0, id="call_0", name="writeFile", arguments="流式参数"}
+   {type="tool_request", index=0, id="call_0", name="writeFile", arguments="流式参数"}
+   {type="tool_request", index=0, id="call_0", name="writeFile", arguments="流式参数"}
+   {type="tool_executed", index=0, id="call_0", name="writeFile", arguments="完整参数"}
+   
+   {type="tool_request", index=1, id="call_1", name="writeFile", arguments="流式参数"}
+   {type="tool_request", index=1, id="call_1", name="writeFile", arguments="流式参数"}
+   {type="tool_request", index=1, id="call_1", name="writeFile", arguments="流式参数"}
+   {type="tool_executed", index=1, id="call_1", name="writeFile", arguments="完整参数"}
+   
+   {type="ai_response", data="生成代码结束"}
+   
+   ```
+
+3. 拿到这些信息后，后端需要对流进行处理，一方面是按需返回给前端，另一方面是保存对话记忆到数据库中。保存到数据库中的对话记忆格式为：
+
+   ```markdown
+   为你生成代码：
+   
+   [工具调用] 写入文件 src/index.html
+   ```html
+   写入的代码
+   
+   
+   [工具调用] 写入文件 src/about.html
+   ```html
+   写入的代码
+   
+   
+   生成代码结束！
+   
+   ```
+
+   上述内容可以直接通过ToolExecutedMessage工具调用完成消息获取到。
+
+4. 返回给前端的内容也是类似的，只不过是为了减少用户等待，首次调用某一个工具时就应该告诉用户“选择工具”信息。其他内容跟要保存的对话记忆是一致的，这样设计不仅减少了定制开发的成本，用户刷新后看到的内容和实时生成时看到的内容也是一致的。
+
+   ```markdown
+   为你生成代码：
+   
+   [选择工具] 写入文件
+   [工具调用] 写入文件 src/index.html
+   ```html
+   写入的代码 ```
+   
+   
+   [选择工具] 写入文件
+   [工具调用] 写入文件 src/about.html
+   ```html
+   写入的代码 ```
+   
+   
+   生成代码结束！
+   
+   ```
+
+   整个AI流式处理过程图：
+
+   
+
+
+
+Flux 流处理器
+
+接下来，我们还要编写下游的Flux流处理器，之前我们是在AppService的chatToGenCode生成方法内处理了原生模式生成的流。现在由于Vue生成模式的消息被封装成了JSON格式消息，所以我们最好针对每类生成模式单独定义一个流处理器，防止逻辑相互影响。
+
+- 原生文本流处理器（原生模式使用）
+- JSON消息流处理器(Vue工程使用)
+
+然后再定义一个执行器，根据生成类型调用不同的流处理器。
+
+JSON消息流处理器，在原生流处理器的基础上增加了2个逻辑：
+
+1. 消息解析：需要根据消息类型，将JSON字符串转换为对应的消息对象，然后提取属性进行其他操作(比如返回给前端、或者拼接起来保存到数据库中)
+2. 输出选择工具消息：虽然我们后端实现了工具调用的流式输出，但是考虑到前端不好对这些消息进行解析和处理，因此我们只在**同一个工具第一次输出时**，输出给前端“选择工具”的消息。可以利用一个集合来判断某个id的工具是否为首次输出。
+
+
+
+### 4、扩展思路
+
+1. 为AI提供代码模板
+2. 深度思考 ： LangChain4j 的 v1.2 版本已经支持深度思考的流式输出特性，直接监听TokenStream的onPartialThinking 事件就能实现了
