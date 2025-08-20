@@ -2,10 +2,10 @@ package com.wang.wangaicodegenerator.ai;
 
 
 import com.wang.wangaicodegenerator.ai.model.enums.CodeGenTypeEnum;
+import com.wang.wangaicodegenerator.ai.tools.*;
 import com.wang.wangaicodegenerator.exception.BusinessException;
 import com.wang.wangaicodegenerator.exception.ErrorCode;
 import com.wang.wangaicodegenerator.service.ChatHistoryService;
-import com.wang.wangaicodegenerator.ai.tools.FileWriteTool;
 import dev.langchain4j.community.store.memory.chat.redis.RedisChatMemoryStore;
 
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
@@ -47,6 +47,8 @@ public class AiCodeGeneratorServiceFactory {
 
     @Resource
     private StreamingChatModel reasoningStreamingChatModel;
+    @Resource
+    private ToolManager toolManager;
 
     /**
      * AI 服务实例缓存
@@ -107,7 +109,7 @@ public class AiCodeGeneratorServiceFactory {
             case VUE_PROJECT -> AiServices.builder(AiCodeGeneratorService.class)
                     .streamingChatModel(reasoningStreamingChatModel)
                     .chatMemoryProvider(memoryId -> chatMemory)
-                    .tools(new FileWriteTool())
+                    .tools(toolManager.getAllTools())
                     //通过hallucinatedToolNameStrategy（幻觉工具名称策略）配置了找不到工具时的处理策略
                     .hallucinatedToolNameStrategy(toolExecutionRequest -> ToolExecutionResultMessage.from(
                             toolExecutionRequest, "Error: there is no tool called " + toolExecutionRequest.name()

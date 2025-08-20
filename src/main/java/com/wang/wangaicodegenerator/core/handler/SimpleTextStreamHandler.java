@@ -10,7 +10,7 @@ import reactor.core.publisher.Flux;
  * @author: Fugitive Mr.Wang
  * @createTime: 2025/8/19---14:30
  * @description: 简单文本流处理器
- *  * 处理 HTML 和 MULTI_FILE 类型的流式响应
+ *   处理 HTML 和 MULTI_FILE 类型的流式响应
  */
 
 @Slf4j
