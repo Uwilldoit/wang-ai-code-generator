@@ -1,7 +1,7 @@
 package com.wang.wangaicodegenerator.ai;
 
 
-import com.wang.wangaicodegenerator.ai.model.enums.CodeGenTypeEnum;
+import com.wang.wangaicodegenerator.model.enums.CodeGenTypeEnum;
 import com.wang.wangaicodegenerator.ai.tools.*;
 import com.wang.wangaicodegenerator.exception.BusinessException;
 import com.wang.wangaicodegenerator.exception.ErrorCode;
@@ -84,7 +84,7 @@ public class AiCodeGeneratorServiceFactory {
     }
 
     private String buildCacheKey(long appId, CodeGenTypeEnum codeGenType) {
-        return appId + ":" + codeGenType.getValue();
+        return appId + "_" + codeGenType.getValue();
     }
 
     /**
@@ -94,19 +94,21 @@ public class AiCodeGeneratorServiceFactory {
      * @return AiCodeGeneratorService
      */
     private AiCodeGeneratorService createAiCodeGeneratorService(long appId, CodeGenTypeEnum codeGenType) {
+        log.info("为 appId: {} 创建新的 AI 服务实例", appId);
         // 根据 appId 构建独立的对话记忆
         MessageWindowChatMemory chatMemory = MessageWindowChatMemory
                 .builder()
                 .id(appId)
                 .chatMemoryStore(redisChatMemoryStore)
-                .maxMessages(20)
+                .maxMessages(100)
                 .build();
         // 从数据库加载历史对话到记忆中
-        chatHistoryService.loadChatHistoryToMemory(appId, chatMemory, 20);
+        chatHistoryService.loadChatHistoryToMemory(appId, chatMemory, 50);
         // 根据代码生成类型选择不同的模型配置
         return switch (codeGenType) {
             // Vue 项目生成使用推理模型
             case VUE_PROJECT -> AiServices.builder(AiCodeGeneratorService.class)
+                    .chatModel(chatModel)
                     .streamingChatModel(reasoningStreamingChatModel)
                     .chatMemoryProvider(memoryId -> chatMemory)
                     .tools(toolManager.getAllTools())

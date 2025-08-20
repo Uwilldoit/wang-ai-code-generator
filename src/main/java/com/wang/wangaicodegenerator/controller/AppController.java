@@ -5,7 +5,6 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
-import com.wang.wangaicodegenerator.ai.model.enums.CodeGenTypeEnum;
 import com.wang.wangaicodegenerator.annotation.AuthCheck;
 import com.wang.wangaicodegenerator.common.BaseResponse;
 import com.wang.wangaicodegenerator.common.DeleteRequest;
@@ -25,7 +24,6 @@ import com.wang.wangaicodegenerator.service.ProjectDownloadService;
 import com.wang.wangaicodegenerator.service.UserService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.BeanUtils;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.*;
@@ -37,12 +35,12 @@ import reactor.core.publisher.Mono;
 
 import java.io.File;
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
  * 应用接口
+ *
  * @author Fugitive Mr.Wang
  */
 @RestController
@@ -87,13 +85,12 @@ public class AppController {
         // 5. 检查代码目录是否存在
         File sourceDir = new File(sourceDirPath);
         ThrowUtils.throwIf(!sourceDir.exists() || !sourceDir.isDirectory(),
-                ErrorCode.NOT_FOUND_ERROR, "应用代码不存在，请先生成代码");
+                ErrorCode.NOT_FOUND_ERROR, "应用代码不存在，请先去生成代码");
         // 6. 生成下载文件名（不建议添加中文内容）
         String downloadFileName = String.valueOf(appId);
         // 7. 调用通用下载服务
         projectDownloadService.downloadProjectAsZip(sourceDirPath, downloadFileName, response);
     }
-
 
 
     /**
@@ -117,8 +114,8 @@ public class AppController {
 
     @GetMapping(value = "/chat/gen/code", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<ServerSentEvent<String>> chatToGenCode(@RequestParam String message,
-                                      @RequestParam Long appId,
-                                      HttpServletRequest request) {
+                                                       @RequestParam Long appId,
+                                                       HttpServletRequest request) {
         // 参数校验
         ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用ID无效");
         ThrowUtils.throwIf(StrUtil.isBlank(message), ErrorCode.PARAMS_ERROR, "用户消息不能为空");
@@ -126,9 +123,9 @@ public class AppController {
         User loginUser = userService.getLoginUser(request);
         // 调用服务生成代码（流式）
         Flux<String> stringFlux = appService.chatToGenCode(message, appId, loginUser);
-        return stringFlux.map(chunk->{
+        return stringFlux.map(chunk -> {
             //将内容包装成JSON对象
-            Map<String,String> wrapper = Map.of("d",chunk);
+            Map<String, String> wrapper = Map.of("d", chunk);
             String jsonStr = JSONUtil.toJsonStr(wrapper);
             return ServerSentEvent.<String>builder().data(jsonStr).build();
         }).concatWith(Mono.just(
@@ -136,8 +133,6 @@ public class AppController {
                 ServerSentEvent.<String>builder().event("done").data("").build()
         ));
     }
-
-
 
 
     // region 用户操作
@@ -160,8 +155,8 @@ public class AppController {
      */
     @PostMapping("/update")
     public BaseResponse<Boolean> updateApp(@RequestBody AppUpdateRequest appUpdateRequest,
-                                             HttpServletRequest request) {
-        if (appUpdateRequest == null || appUpdateRequest.getId() <=0) {
+                                           HttpServletRequest request) {
+        if (appUpdateRequest == null || appUpdateRequest.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
 
@@ -208,7 +203,7 @@ public class AppController {
         ThrowUtils.throwIf(oldApp == null, ErrorCode.NOT_FOUND_ERROR);
 
         // 仅本人或管理员可以删除
-        if (!oldApp.getUserId().equals(loginUser.getId())&& !UserConstant.ADMIN_ROLE.equals(loginUser.getUserRole())){
+        if (!oldApp.getUserId().equals(loginUser.getId()) && !UserConstant.ADMIN_ROLE.equals(loginUser.getUserRole())) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
 
@@ -220,7 +215,7 @@ public class AppController {
     /**
      * 根据 id 获取应用详情
      *
-     * @param id      应用 id
+     * @param id 应用 id
      * @return 应用详情
      */
     @GetMapping("/get/vo")
@@ -239,7 +234,7 @@ public class AppController {
      */
     @PostMapping("my/list/page/vo")
     public BaseResponse<Page<AppVO>> listMyAppVOByPage(@RequestBody AppQueryRequest appQueryRequest,
-                                                   HttpServletRequest request) {
+                                                       HttpServletRequest request) {
         ThrowUtils.throwIf(appQueryRequest == null, ErrorCode.PARAMS_ERROR);
 
         // 获取当前登录用户
@@ -277,7 +272,7 @@ public class AppController {
         if (pageSize > 20) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "每页数量不能超过20");
         }
-        int pageNum = appQueryRequest.getPageNum();
+        long pageNum = appQueryRequest.getPageNum();
         // 只查询精选的应用
         appQueryRequest.setPriority(AppConstant.RECOMMEND_APP_PRIORITY);
         QueryWrapper queryWrapper = appService.getQueryWrapper(appQueryRequest);
@@ -303,10 +298,10 @@ public class AppController {
         if (deleteRequest == null || deleteRequest.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        Long id = deleteRequest.getId();
+        long id = deleteRequest.getId();
         App oldApp = appService.getById(id);
         ThrowUtils.throwIf(oldApp == null, ErrorCode.NOT_FOUND_ERROR);
-        boolean result = appService.removeById(deleteRequest.getId());
+        boolean result = appService.removeById(id);
         return ResultUtils.success(result);
     }
 
@@ -374,9 +369,6 @@ public class AppController {
         // 获取封装类
         return ResultUtils.success(appService.getAppVO(app));
     }
-
-
-
 
 
     // endregion

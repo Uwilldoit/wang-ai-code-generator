@@ -1,6 +1,6 @@
 package com.wang.wangaicodegenerator.core.handler;
 
-import com.wang.wangaicodegenerator.ai.model.enums.CodeGenTypeEnum;
+import com.wang.wangaicodegenerator.model.enums.CodeGenTypeEnum;
 import com.wang.wangaicodegenerator.model.entity.User;
 import com.wang.wangaicodegenerator.service.ChatHistoryService;
 import jakarta.annotation.Resource;

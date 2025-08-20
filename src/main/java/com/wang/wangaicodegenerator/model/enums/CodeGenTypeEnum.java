@@ -1,4 +1,4 @@
-package com.wang.wangaicodegenerator.ai.model.enums;
+package com.wang.wangaicodegenerator.model.enums;
 
 import cn.hutool.core.util.ObjUtil;
 import lombok.Getter;

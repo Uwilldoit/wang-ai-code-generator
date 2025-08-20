@@ -1,6 +1,6 @@
 package com.wang.wangaicodegenerator.core;
 
-import com.wang.wangaicodegenerator.ai.model.enums.CodeGenTypeEnum;
+import com.wang.wangaicodegenerator.model.enums.CodeGenTypeEnum;
 import jakarta.annotation.Resource;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -9,8 +9,6 @@ import reactor.core.publisher.Flux;
 
 import java.io.File;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author: Fugitive Mr.Wang

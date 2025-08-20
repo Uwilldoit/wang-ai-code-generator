@@ -1,9 +1,8 @@
 package com.wang.wangaicodegenerator.core.saver;
 
 import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
-import com.wang.wangaicodegenerator.ai.model.enums.CodeGenTypeEnum;
+import com.wang.wangaicodegenerator.model.enums.CodeGenTypeEnum;
 import com.wang.wangaicodegenerator.constant.AppConstant;
 import com.wang.wangaicodegenerator.exception.BusinessException;
 import com.wang.wangaicodegenerator.exception.ErrorCode;

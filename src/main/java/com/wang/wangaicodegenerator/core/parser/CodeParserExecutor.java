@@ -1,6 +1,6 @@
 package com.wang.wangaicodegenerator.core.parser;
 
-import com.wang.wangaicodegenerator.ai.model.enums.CodeGenTypeEnum;
+import com.wang.wangaicodegenerator.model.enums.CodeGenTypeEnum;
 import com.wang.wangaicodegenerator.exception.BusinessException;
 import com.wang.wangaicodegenerator.exception.ErrorCode;
 

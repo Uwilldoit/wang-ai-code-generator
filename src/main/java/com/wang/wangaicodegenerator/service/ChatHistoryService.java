@@ -6,11 +6,9 @@ import com.mybatisflex.core.paginate.Page;
 import com.wang.wangaicodegenerator.model.dto.chatHistory.ChatHistoryQueryRequest;
 import com.wang.wangaicodegenerator.model.entity.ChatHistory;
 import com.wang.wangaicodegenerator.model.entity.User;
-import com.wang.wangaicodegenerator.model.vo.ChatHistoryVO;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 /**
  * 对话历史 服务层。

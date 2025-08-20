@@ -19,6 +19,22 @@ public class VueProjectBuilder {
 
 
     /**
+     * 异步构建项目（不阻塞主流程）
+     *
+     * @param projectPath 项目路径
+     */
+    public void buildProjectAsync(String projectPath) {
+        // 在单独的线程中执行构建，避免阻塞主流程
+        Thread.ofVirtual().name("vue-builder-" + System.currentTimeMillis()).start(() -> {
+            try {
+                buildProject(projectPath);
+            } catch (Exception e) {
+                log.error("异步构建 Vue 项目时发生异常: {}", e.getMessage(), e);
+            }
+        });
+    }
+
+    /**
      * 构建 Vue 项目
      *
      * @param projectPath 项目根目录路径
@@ -39,12 +55,12 @@ public class VueProjectBuilder {
         log.info("开始构建 Vue 项目: {}", projectPath);
         // 执行 npm install
         if (!executeNpmInstall(projectDir)) {
-            log.error("npm install 执行失败");
+            log.error("npm install 执行失败:{}",projectPath);
             return false;
         }
         // 执行 npm run build
         if (!executeNpmBuild(projectDir)) {
-            log.error("npm run build 执行失败");
+            log.error("npm run build 执行失败:{}",projectDir);
             return false;
         }
         // 验证 dist 目录是否生成
@@ -116,21 +132,7 @@ public class VueProjectBuilder {
         return executeCommand(projectDir, command, 180);
     }
 
-    /**
-     * 异步构建项目（不阻塞主流程）
-     *
-     * @param projectPath 项目路径
-     */
-    public void buildProjectAsync(String projectPath) {
-        // 在单独的线程中执行构建，避免阻塞主流程
-        Thread.ofVirtual().name("vue-builder-" + System.currentTimeMillis()).start(() -> {
-            try {
-                buildProject(projectPath);
-            } catch (Exception e) {
-                log.error("异步构建 Vue 项目时发生异常: {}", e.getMessage(), e);
-            }
-        });
-    }
+
 
 
 

@@ -17,7 +17,7 @@ import com.wang.wangaicodegenerator.core.parser.CodeParserExecutor;
 import com.wang.wangaicodegenerator.core.saver.CodeFileSaverExecutor;
 import com.wang.wangaicodegenerator.ai.model.HtmlCodeResult;
 import com.wang.wangaicodegenerator.ai.model.MultiFileCodeResult;
-import com.wang.wangaicodegenerator.ai.model.enums.CodeGenTypeEnum;
+import com.wang.wangaicodegenerator.model.enums.CodeGenTypeEnum;
 import com.wang.wangaicodegenerator.exception.BusinessException;
 import com.wang.wangaicodegenerator.exception.ErrorCode;
 import dev.langchain4j.model.chat.response.ChatResponse;
@@ -31,6 +31,7 @@ import java.io.File;
 
 /**
  * AI 代码生成外观类，组合生成和保存功能
+ * @author Fugitive Mr.Wang
  */
 @Slf4j
 @Service

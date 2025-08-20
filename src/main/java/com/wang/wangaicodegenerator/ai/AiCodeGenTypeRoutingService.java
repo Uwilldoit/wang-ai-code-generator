@@ -1,6 +1,6 @@
 package com.wang.wangaicodegenerator.ai;
 
-import com.wang.wangaicodegenerator.ai.model.enums.CodeGenTypeEnum;
+import com.wang.wangaicodegenerator.model.enums.CodeGenTypeEnum;
 import dev.langchain4j.service.SystemMessage;
 
 /**

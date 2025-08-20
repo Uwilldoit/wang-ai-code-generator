@@ -5,7 +5,7 @@ import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
 import com.wang.wangaicodegenerator.ai.model.HtmlCodeResult;
 import com.wang.wangaicodegenerator.ai.model.MultiFileCodeResult;
-import com.wang.wangaicodegenerator.ai.model.enums.CodeGenTypeEnum;
+import com.wang.wangaicodegenerator.model.enums.CodeGenTypeEnum;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -16,6 +16,7 @@ import java.nio.charset.StandardCharsets;
  * @description:
  */
 
+@Deprecated
 public class CodeFileSaver {
 
     /**

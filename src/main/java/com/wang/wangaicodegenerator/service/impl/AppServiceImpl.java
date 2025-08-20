@@ -8,7 +8,7 @@ import cn.hutool.core.util.StrUtil;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import com.wang.wangaicodegenerator.ai.AiCodeGenTypeRoutingService;
-import com.wang.wangaicodegenerator.ai.model.enums.CodeGenTypeEnum;
+import com.wang.wangaicodegenerator.model.enums.CodeGenTypeEnum;
 import com.wang.wangaicodegenerator.constant.AppConstant;
 import com.wang.wangaicodegenerator.core.AiCodeGeneratorFacade;
 import com.wang.wangaicodegenerator.core.builder.VueProjectBuilder;
