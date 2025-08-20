@@ -7,6 +7,7 @@ import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
+import com.wang.wangaicodegenerator.ai.AiCodeGenTypeRoutingService;
 import com.wang.wangaicodegenerator.ai.model.enums.CodeGenTypeEnum;
 import com.wang.wangaicodegenerator.constant.AppConstant;
 import com.wang.wangaicodegenerator.core.AiCodeGeneratorFacade;
@@ -16,6 +17,7 @@ import com.wang.wangaicodegenerator.exception.BusinessException;
 import com.wang.wangaicodegenerator.exception.ErrorCode;
 import com.wang.wangaicodegenerator.exception.ThrowUtils;
 import com.wang.wangaicodegenerator.mapper.AppMapper;
+import com.wang.wangaicodegenerator.model.dto.app.AppAddRequest;
 import com.wang.wangaicodegenerator.model.dto.app.AppQueryRequest;
 import com.wang.wangaicodegenerator.model.entity.User;
 import com.wang.wangaicodegenerator.model.enums.ChatHistoryMessageTypeEnum;
@@ -23,6 +25,7 @@ import com.wang.wangaicodegenerator.model.vo.AppVO;
 import com.wang.wangaicodegenerator.model.vo.UserVO;
 import com.wang.wangaicodegenerator.service.AppService;
 import com.wang.wangaicodegenerator.service.ChatHistoryService;
+import com.wang.wangaicodegenerator.service.ScreenshotService;
 import com.wang.wangaicodegenerator.service.UserService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -31,7 +34,6 @@ import com.wang.wangaicodegenerator.model.entity.App;
 import reactor.core.publisher.Flux;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -56,6 +58,56 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
     private StreamHandlerExecutor streamHandlerExecutor;
     @Resource
     private VueProjectBuilder vueProjectBuilder;
+    @Resource
+    private ScreenshotService screenshotService;
+
+    @Resource
+    private AiCodeGenTypeRoutingService aiCodeGenTypeRoutingService;
+
+    @Override
+    public Long createApp(AppAddRequest appAddRequest, User loginUser) {
+        // 参数校验
+        String initPrompt = appAddRequest.getInitPrompt();
+        ThrowUtils.throwIf(StrUtil.isBlank(initPrompt), ErrorCode.PARAMS_ERROR, "初始化 prompt 不能为空");
+        // 构造入库对象
+        App app = new App();
+        BeanUtil.copyProperties(appAddRequest, app);
+        app.setUserId(loginUser.getId());
+        // 应用名称暂时为 initPrompt 前 12 位
+        app.setAppName(initPrompt.substring(0, Math.min(initPrompt.length(), 12)));
+        // 使用 AI 智能选择代码生成类型
+        CodeGenTypeEnum selectedCodeGenType = aiCodeGenTypeRoutingService.routeCodeGenType(initPrompt);
+        app.setCodeGenType(selectedCodeGenType.getValue());
+        // 插入数据库
+        boolean result = this.save(app);
+        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
+        log.info("应用创建成功，ID: {}, 类型: {}", app.getId(), selectedCodeGenType.getValue());
+        return app.getId();
+    }
+
+
+
+    /**
+     * 异步生成应用截图并更新封面
+     *
+     * @param appId  应用ID
+     * @param appUrl 应用访问URL
+     */
+    @Override
+    public void generateAppScreenshotAsync(Long appId, String appUrl) {
+        // 使用虚拟线程异步执行
+        Thread.startVirtualThread(() -> {
+            // 调用截图服务生成截图并上传
+            String screenshotUrl = screenshotService.generateAndUploadScreenshot(appUrl);
+            // 更新应用封面字段
+            App updateApp = new App();
+            updateApp.setId(appId);
+            updateApp.setCover(screenshotUrl);
+            boolean updated = this.updateById(updateApp);
+            ThrowUtils.throwIf(!updated, ErrorCode.OPERATION_ERROR, "更新应用封面字段失败");
+        });
+    }
+
 
 
     /**
@@ -177,8 +229,11 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         updateApp.setDeployedTime(LocalDateTime.now());
         boolean updateResult = this.updateById(updateApp);
         ThrowUtils.throwIf(!updateResult, ErrorCode.OPERATION_ERROR, "更新应用部署信息失败");
-        // 10. 返回可访问的 URL
-        return String.format("%s/%s/", AppConstant.CODE_DEPLOY_HOST, deployKey);
+        // 10. 构建可访问的 URL
+        String appDeployUrl = String.format("%s/%s/", AppConstant.CODE_DEPLOY_HOST, deployKey);
+        //11 异步生成截图，并更新应用封面
+        generateAppScreenshotAsync(appId, appDeployUrl);
+        return appDeployUrl;
     }
 
 

@@ -1,6 +1,6 @@
 # AI零代码应用生成平台
 
-## 用户模块
+## 1、用户模块
 
 ### 1、需求分析
 
@@ -119,7 +119,7 @@ inviteUser    bigint       DEFAULT NULL COMMENT '邀请用户 id'
 
 
 
-## AI生成应用
+## 2、AI生成应用
 
 ### 实现AI应用生成（原生模式）
 
@@ -184,7 +184,7 @@ void saveFiles(MultiFileCodeResult result, String baseDirPath) {}
 
 
 
-## 应用模块
+## 3、应用模块
 
 ### 1、需求分析
 
@@ -316,7 +316,7 @@ create table app
 
 
 
-## 对话历史模块
+## 4、对话历史模块
 
 为AI零代码应用生成平台添加对话历史管理功能， 让用户能够查看和管理历史对话记录。
 
@@ -451,7 +451,7 @@ LangChain4j不仅提供了对话记忆能力，而且还能结合Redis持久化�
 
 
 
-## 工程项目生成
+## 5、工程项目生成
 
 目前平台只支持生成原生网站，在实际使用中有一定局限性。我们将让其生成更复杂的前端工程化项目，提高本平台的实用性。
 
@@ -803,3 +803,181 @@ JSON消息流处理器，在原生流处理器的基础上增加了2个逻辑：
 
 1. 为AI提供代码模板
 2. 深度思考 ： LangChain4j 的 v1.2 版本已经支持深度思考的流式输出特性，直接监听TokenStream的onPartialThinking 事件就能实现了
+
+
+
+## 6、拓展功能
+
+前面我们已经了AI零代码应用生成平台的核心功能，可以通过简单的对话生成各种类型的前端应用。
+
+这次我们将继续为平台扩展更多功能：
+
+- 生成应用封面图
+- 下载项目代码包
+- AI 智能选择方案
+
+
+
+### 生成应用封面图
+
+#### 1、需求分析
+
+如果每个应用都有一个精美的预览图，会让整个平台看起来跟家专业和吸引人。参考其他的大厂平台，可以直接将网站实际的运行效果作为应用封面图，而且要自动生成。
+
+#### 2、方案设计
+
+##### 实现流程
+
+1. 首先要获取到应用的可访问URL。由于我们的平台支持多种生成模式（HTML、多文件项目、Vue工程），其中原生模式和Vue 工程模式生成可访问浏览 URL的时机不一样。所以为了统一处理，而且确保应用已经可以正常访问，我们选择在 **应用部署完成后再生成封面图**。
+2. 使用 `Selenium`这样的自动化工具打开一个无头浏览器，访问应用页面并进行截图。
+3. 直接截图得到的图片通常比较大，不仅占用存储空间，加载速度也比较慢。因此我们需要对图片进行压缩处理。 虽然我们可以通过调整 Selenium 的窗口大小来控制截图尺寸，但这样可能会导致页面显示不全。更好的方案是 先按正常尺寸截图，然后使用工具库对图片进行压缩。
+4. 为了确保图片的持久化存储和快速访问，将压缩后的图片上传到腾讯云COS对象存储种，并将访问URL保存到数据库的应用表中。
+5. 最后，记得清理本地临时文件。
+
+##### 网页截图技术方案选型
+
+![image-20250819235023359](D:\code\wang-ai-code-generator\ReadMe.assets\image-20250819235023359.png)
+
+追求稳定性选Selenium，追求性能选Playwright，如果用Node.js技术栈就选Puppeteer，有充足预算就选云服务API，考虑到我们是Java技术栈，以及对稳定性的要求，最终选择 Selenium。
+
+##### 什么是Selenium
+
+Selenium 是一个非常成熟的Web自动化框架，它的核心概念是WebDriver（浏览器驱动）。WebDriver 是一个可以控制浏览器行为的接口，能够让程序像人类一样操作浏览器：打开页面，点击按钮、输入文本、截取屏幕等。可以说WebDriver是Selenium 与浏览器之间的桥梁，因为不同浏览器 有不同的内部API 和控制机制，驱动程序负责将Selenium的标准化命令翻译成各个浏览器能理解的具体指令，从而实现跨浏览器的统一自动化控制。
+
+在实际使用Selenium 时，最好搭配 **WebDriverManager** 使用。 WebDriverManager 是一个自动管理浏览器驱动程序的工具库，它解决了很多实际开发中的痛点：
+
+1. 自动下载驱动程序： 根据系统上安装的浏览器版本，自动下载对应的驱动程序。
+2. 版本匹配： 确保驱动程序版本与浏览器版本兼容
+3. 路径管理：自动设置系统属性，告诉 Selenium 驱动程序的位置
+4. 缓存机制： 下载的驱动程序会被缓存，避免重复下载。
+
+![image-20250820090507636](D:\code\wang-ai-code-generator\ReadMe.assets\image-20250820090507636.png)
+
+##### 开发：
+
+1. 本地截图生成
+2. 保存截图到对象存储
+3. 截图服务
+4. 触发截图生成
+
+#### 3、扩展思路：
+
+##### 截图服务优化：
+
+目前在生成截图时，我们是通过静态方法初始化了一个全局共用的WebDriver，来避免重复加载。单纯是为了追求性能。但是在并发截图的场景下，如果复用同一个 WebDriver，可能会导致截图了错误的页面。
+
+```java
+// 危险：多线程共享同一个driver
+private static final WebDriver webDriver = new ChromeDriver();
+
+// 线程A: driver.get("page1.html") -> 截图
+// 线程B: driver.get("page2.html") -> 截图  
+// 结果：线程 A 可能截到 page2 的内容
+```
+
+可以这样优化：
+
+1. 每次创建新实例
+
+   ```java
+   public static String saveWebPageScreenshot(String webUrl) {
+       WebDriver driver = initChromeDriver(); // 每次新建
+       try {
+           driver.get(webUrl);
+           return takeScreenshot(driver);
+       } finally {
+           driver.quit(); // 用完就关闭
+       }
+   }
+   ```
+
+   优点：好理解，缺点是重复初始化驱动会严重影响性能，不推荐。
+
+2. 连接池模式。维护一个WebDriver 池，按需分配和回收。
+
+   ```java
+   @Component
+   public class WebDriverPool {
+       private final Queue<WebDriver> pool = new ConcurrentLinkedQueue<>();
+       
+       public WebDriver borrowDriver() { /* 获取空闲driver */ }
+       public void returnDriver(WebDriver driver) { /* 归还driver */ }
+   }
+   ```
+
+   优点：更灵活地复用线程。缺点：实现成本较大，而且需要额外维护池。
+
+3. ThreadLocal 模式。每个线程使用同一个 WebDriver
+
+   ```java
+   private static final ThreadLocal<WebDriver> driverThreadLocal = new ThreadLocal<>();
+   
+   public static WebDriver getDriver() {
+       WebDriver driver = driverThreadLocal.get();
+       if (driver == null) {
+           driver = initChromeDriver();
+           driverThreadLocal.set(driver);
+       }
+       return driver;
+   }
+   
+   ```
+
+   比较推荐这种方案，实现复杂度一般，而且能够解决并发问题。缺点是如果你的线程数较多，WebDriver也较多，一致不释放，可能会导致 内存溢出。
+
+4. 使用队列。将要执行的截图任务依次放到队列中，WebDriver 线程组依次取出任务执行，本质是并行变串行。 一种比较简单的实现：
+    用newSingleThreadExecutor()确保只有一个处理线程，让所有截图任务串行。
+   用CompletableFuture 提交任务，自动处理任务队列和异步返回。
+
+   ```java
+   @Component
+   public class ScreenshotManager {
+       private static final WebDriver webDriver = initChromeDriver();
+       private final ExecutorService executor = Executors.newSingleThreadExecutor();
+       
+       public CompletableFuture<String> takeScreenshot(String url) {
+           return CompletableFuture.supplyAsync(() -> {
+               webDriver.get(url);
+               return doScreenshot(webDriver);
+           }, executor);
+       }
+   }
+   
+   ```
+
+   优点：性能好，可以异步返回结果、不阻塞调用方。缺点是实现复杂度较大。不过如果并发量和稳定性要求很高，可以考虑用消息队列(如RabbitMQ 或 Kafka)
+
+### 下载项目代码包
+
+#### 1、需求分析
+
+除了在线预览和使用生成的应用，用户可能需要下载代码到本地进行二次开发。这样一来，我们平台不仅是一个在线工具，更是一个真正的开发起点。
+
+#### 2、方案设计
+
+实现代码下载功能需要考虑几个关键步骤：
+
+1. 基础校验：我们需要验证应用是否存在、用户是否有下载权限等。考虑到安全性，只有应用的创建者才能下载对应的代码。
+2. 找到应用的生成目录。这里要特别注意，我们要下载的是 **原始的生成目录**，而不是部署目录。部署目录是打包构建之后的文件，而生成目录包含的是源代码。
+3. 定义文件过滤器，因为并不是所有文件都需要提供给用户下载。比如 `node_modules` 目录体积庞大且可以通过 `npm install` 重新安装，`dist` 和 `build` 目录是构建产物可以重新生成，`.DS_Store`、`.env` 等文件包含系统信息或敏感配置不应该下载。
+4. 最后将过滤后的文件打包成 ZIP 压缩包，通过 HTTP 响应直接返回给前端。需要设置正确的响应头，告诉浏览器这是一个需要下载的文件、并且传递下载的文件名称
+
+#### 3、扩展思路：
+
+1. 判断应﻿用是否已经生成了浏﻿览地址，只有生成了‎地址的应用才允许下⁠载（需要后端配合修‍改逻辑）。
+2. 添加下﻿载统计功能，记录每个﻿应用的下载次数，有助‎于了解用户行为和优化⁠系统，比如利用 CD‍N 对热门应用进行加速。
+
+### AI 智能选择方案
+
+#### 1、需求分析
+
+目前有3套不同的代码生成方案：原生HTML，原生多文件、Vue工程。那么问题来了，用户提出需求时，如何判断应该使用哪一个方案呢？让用户选择的话，会增加用户的使用门槛。更好的方案是让AI来自动判断，这就是所谓的智能路由。
+
+#### 2、方案设计
+
+在实际生产环境中，智能路由本身应该选择 成本更低、输出更快的大模型。
+
+
+
+## 7、可视化修改
+

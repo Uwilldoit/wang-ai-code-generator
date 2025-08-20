@@ -3,6 +3,7 @@ package com.wang.wangaicodegenerator.service;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.service.IService;
+import com.wang.wangaicodegenerator.model.dto.app.AppAddRequest;
 import com.wang.wangaicodegenerator.model.dto.app.AppQueryRequest;
 import com.wang.wangaicodegenerator.model.entity.App;
 import com.wang.wangaicodegenerator.model.entity.User;
@@ -29,6 +30,10 @@ public interface AppService extends IService<App> {
     AppVO getAppVO(App app);
 
     List<AppVO> getAppVOList(List<App> appList);
+
+    Long createApp(AppAddRequest appAddRequest, User loginUser);
+
+    void generateAppScreenshotAsync(Long appId, String appUrl);
 
     /**
      * 聊天生成代码
