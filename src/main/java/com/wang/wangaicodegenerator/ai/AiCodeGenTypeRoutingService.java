@@ -7,7 +7,7 @@ import dev.langchain4j.service.SystemMessage;
  * @author: Fugitive Mr.Wang
  * @createTime: 2025/8/20---18:24
  * @description: AI代码生成类型智能路由服务
- *  * 使用结构化输出直接返回枚举类型
+ *   使用结构化输出直接返回枚举类型
  */
 
 
