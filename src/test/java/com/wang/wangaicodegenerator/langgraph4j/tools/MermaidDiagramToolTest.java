@@ -39,7 +39,7 @@ class MermaidDiagramToolTest {
         List<ImageResource> diagrams = mermaidDiagramTool.generateMermaidDiagram(mermaidCode, description);
         assertNotNull(diagrams);
         // 如果有结果，验证图表资源
-        ImageResource firstDiagram = diagrams.get(0);
+        ImageResource firstDiagram = diagrams.getFirst();
         assertEquals(ImageCategoryEnum.ARCHITECTURE, firstDiagram.getCategory());
         assertEquals(description, firstDiagram.getDescription());
         assertNotNull(firstDiagram.getUrl());

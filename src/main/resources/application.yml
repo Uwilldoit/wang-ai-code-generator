@@ -22,6 +22,7 @@ spring:
       password:
       ## 设置数据过期时间为3600秒（1小时）
       ttl: 3600
+      database: 0
 server:
   port: 8124
   servlet:

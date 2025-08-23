@@ -1,6 +1,7 @@
 package com.wang.wangaicodegenerator.ai;
 
 
+import com.wang.wangaicodegenerator.ai.guardrail.PromptSafetyInputGuardrail;
 import com.wang.wangaicodegenerator.model.enums.CodeGenTypeEnum;
 import com.wang.wangaicodegenerator.ai.tools.*;
 import com.wang.wangaicodegenerator.exception.BusinessException;
@@ -110,6 +111,7 @@ public class AiCodeGeneratorServiceFactory {
                         .streamingChatModel(reasoningStreamingChatModel)
                         .chatMemoryProvider(memoryId -> chatMemory)
                         .tools(toolManager.getAllTools())
+                        .inputGuardrails(new PromptSafetyInputGuardrail())
                         .hallucinatedToolNameStrategy(toolExecutionRequest -> ToolExecutionResultMessage.from(
                                 toolExecutionRequest, "Error: there is no tool called " + toolExecutionRequest.name()
                         ))
