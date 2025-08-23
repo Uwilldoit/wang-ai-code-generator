@@ -24,6 +24,7 @@ import com.wang.wangaicodegenerator.service.ProjectDownloadService;
 import com.wang.wangaicodegenerator.service.UserService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.*;
@@ -56,6 +57,7 @@ public class AppController {
 
     @Resource
     private ProjectDownloadService projectDownloadService;
+
 
     /**
      * 下载应用代码
@@ -263,6 +265,11 @@ public class AppController {
     /**
      * 分页查询精选的应用列表（支持根据名称查询，每页最多 20 个）
      */
+    @Cacheable(
+            value = "recommend_app_page",
+            key = "T(com.wang.wangaicodegenerator.utils.CacheKeyUtils).generateKey(#appQueryRequest)",
+            condition = "#appQueryRequest.pageNum <= 10"
+    )
     @PostMapping("/recommend/list/page/vo")
     public BaseResponse<Page<AppVO>> listRecommendAppVOByPage(@RequestBody AppQueryRequest appQueryRequest) {
         ThrowUtils.throwIf(appQueryRequest == null, ErrorCode.PARAMS_ERROR);
