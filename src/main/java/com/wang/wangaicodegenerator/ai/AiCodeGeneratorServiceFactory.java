@@ -2,6 +2,7 @@ package com.wang.wangaicodegenerator.ai;
 
 
 import com.wang.wangaicodegenerator.ai.guardrail.PromptSafetyInputGuardrail;
+import com.wang.wangaicodegenerator.ai.guardrail.RetryOutputGuardrail;
 import com.wang.wangaicodegenerator.model.enums.CodeGenTypeEnum;
 import com.wang.wangaicodegenerator.ai.tools.*;
 import com.wang.wangaicodegenerator.exception.BusinessException;
@@ -112,9 +113,13 @@ public class AiCodeGeneratorServiceFactory {
                         .chatMemoryProvider(memoryId -> chatMemory)
                         .tools(toolManager.getAllTools())
                         .inputGuardrails(new PromptSafetyInputGuardrail())
+                        //添加输出护轨，为了流式输出，这里不使用
+//                        .outputGuardrails(new RetryOutputGuardrail())
                         .hallucinatedToolNameStrategy(toolExecutionRequest -> ToolExecutionResultMessage.from(
                                 toolExecutionRequest, "Error: there is no tool called " + toolExecutionRequest.name()
                         ))
+                        //最多连续调用20次工具
+                        .maxSequentialToolsInvocations(20)
                         .build();
             }
             case HTML, MULTI_FILE -> {
