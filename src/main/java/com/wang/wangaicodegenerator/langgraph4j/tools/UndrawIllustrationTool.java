@@ -6,8 +6,8 @@ import cn.hutool.http.HttpResponse;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
-import com.wang.wangaicodegenerator.langgraph4j.state.ImageCategoryEnum;
-import com.wang.wangaicodegenerator.langgraph4j.state.ImageResource;
+import com.wang.wangaicodegenerator.langgraph4j.model.enums.ImageCategoryEnum;
+import com.wang.wangaicodegenerator.langgraph4j.model.ImageResource;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
 import lombok.extern.slf4j.Slf4j;
@@ -26,7 +26,7 @@ import java.util.List;
 @Component
 public class UndrawIllustrationTool {
 
-    private static final String UNDRAW_API_URL = "https://undraw.co/_next/data/_FTM2d-THILOVilGvbqjc/search/%s.json?term=%s";
+    private static final String UNDRAW_API_URL = "https://undraw.co/_next/data/9fXhtueLm0tySnSMDaVOx/search/%s.json?term=%s";
 
     @Tool("搜索插画图片，用于网站美化和装饰")
     public List<ImageResource> searchIllustrations(@P("搜索关键词") String query) {

@@ -1,5 +1,6 @@
-package com.wang.wangaicodegenerator.langgraph4j.state;
+package com.wang.wangaicodegenerator.langgraph4j.model;
 
+import com.wang.wangaicodegenerator.langgraph4j.model.enums.ImageCategoryEnum;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

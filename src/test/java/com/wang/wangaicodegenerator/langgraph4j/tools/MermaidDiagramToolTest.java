@@ -1,7 +1,7 @@
 package com.wang.wangaicodegenerator.langgraph4j.tools;
 
-import com.wang.wangaicodegenerator.langgraph4j.state.ImageCategoryEnum;
-import com.wang.wangaicodegenerator.langgraph4j.state.ImageResource;
+import com.wang.wangaicodegenerator.langgraph4j.model.enums.ImageCategoryEnum;
+import com.wang.wangaicodegenerator.langgraph4j.model.ImageResource;
 import jakarta.annotation.Resource;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

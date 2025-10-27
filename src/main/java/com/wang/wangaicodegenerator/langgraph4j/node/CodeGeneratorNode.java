@@ -28,14 +28,15 @@ public class CodeGeneratorNode {
             WorkflowContext context = WorkflowContext.getContext(state);
             log.info("执行节点: 代码生成");
 
+
             // 使用增强提示词作为发给 AI 的用户消息
             String userMessage = context.getEnhancedPrompt();
             CodeGenTypeEnum generationType = context.getGenerationType();
             // 获取 AI 代码生成外观服务
             AiCodeGeneratorFacade codeGeneratorFacade = SpringContextUtil.getBean(AiCodeGeneratorFacade.class);
             log.info("开始生成代码，类型: {} ({})", generationType.getValue(), generationType.getText());
-            // 先使用固定的 appId (后续再整合到业务中)
-            Long appId = 0L;
+            // 获取当前应用 ID
+            Long appId = context.getAppId();
             // 调用流式代码生成
             Flux<String> codeStream = codeGeneratorFacade.generateAndSaveCodeStream(userMessage, generationType, appId);
             // 同步等待流式输出完成

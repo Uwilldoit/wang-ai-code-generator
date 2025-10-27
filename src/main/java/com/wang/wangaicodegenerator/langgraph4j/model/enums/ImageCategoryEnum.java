@@ -1,4 +1,4 @@
-package com.wang.wangaicodegenerator.langgraph4j.state;
+package com.wang.wangaicodegenerator.langgraph4j.model.enums;
 
 import cn.hutool.core.util.ObjUtil;
 import lombok.Getter;

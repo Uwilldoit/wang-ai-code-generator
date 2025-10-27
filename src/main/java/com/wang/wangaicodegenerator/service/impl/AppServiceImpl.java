@@ -9,7 +9,7 @@ import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import com.wang.wangaicodegenerator.ai.AiCodeGenTypeRoutingService;
 import com.wang.wangaicodegenerator.ai.AiCodeGenTypeRoutingServiceFactory;
-import com.wang.wangaicodegenerator.ai.AiCodeGeneratorServiceFactory;
+import com.wang.wangaicodegenerator.langgraph4j.CodeGenWorkflow;
 import com.wang.wangaicodegenerator.model.enums.CodeGenTypeEnum;
 import com.wang.wangaicodegenerator.constant.AppConstant;
 import com.wang.wangaicodegenerator.core.AiCodeGeneratorFacade;
@@ -25,6 +25,7 @@ import com.wang.wangaicodegenerator.model.entity.User;
 import com.wang.wangaicodegenerator.model.enums.ChatHistoryMessageTypeEnum;
 import com.wang.wangaicodegenerator.model.vo.AppVO;
 import com.wang.wangaicodegenerator.model.vo.UserVO;
+import com.wang.wangaicodegenerator.monitor.MonitorContextHolder;
 import com.wang.wangaicodegenerator.service.AppService;
 import com.wang.wangaicodegenerator.service.ChatHistoryService;
 import com.wang.wangaicodegenerator.service.ScreenshotService;
@@ -140,6 +141,9 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
     }
 
 
+
+
+
     /**
      * 与AI对话并生成代码
      *
@@ -149,7 +153,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
      * @return 生成的代码流
      */
     @Override
-    public Flux<String> chatToGenCode(String message, Long appId, User loginUser) {
+    public Flux<String> chatToGenCode(Long appId, String message, User loginUser, boolean agent) {
         //1、参数校验
         ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用ID不能为空");
         ThrowUtils.throwIf(StrUtil.isBlank(message), ErrorCode.PARAMS_ERROR, "用户消息不能为空");
@@ -164,10 +168,22 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         ThrowUtils.throwIf(codeGenTypeEnum == null, ErrorCode.PARAMS_ERROR, "不支持生成该类型代码");
         //5、通过校验后，添加用户消息到对话历史
         chatHistoryService.addChatMessage(appId, message, ChatHistoryMessageTypeEnum.USER.getValue(), loginUser.getId());
-        //6、调用AI生成代码（流式）
-        Flux<String> stringFlux = aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenTypeEnum, appId);
-        //7、收集AI响应内容并在完成后记录到对话历史
-        return streamHandlerExecutor.doExecute(stringFlux, chatHistoryService, appId, loginUser, codeGenTypeEnum);
+        //6、根据agent参数选择生成方式
+        Flux<String> codeStream;
+        if (agent){
+            //Agent模式：使用工作流生成代码
+            codeStream = new CodeGenWorkflow().executeWorkflowWithFlux(message, appId);
+        }else {
+            //传统模式：：使用AiCodeGeneratorFacade生成代码
+            codeStream=aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenTypeEnum, appId);
+        }
+
+        //8、收集AI响应内容并在完成后记录到对话历史
+        return streamHandlerExecutor.doExecute(codeStream, chatHistoryService, appId, loginUser, codeGenTypeEnum)
+                .doFinally(signalType -> {
+                    //流结束时清理（无论成功/失败/取消）
+                    MonitorContextHolder.clearContext();
+                });
     }
 
     /**
