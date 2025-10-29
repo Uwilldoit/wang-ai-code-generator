@@ -25,6 +25,7 @@ import com.wang.wangaicodegenerator.model.entity.User;
 import com.wang.wangaicodegenerator.model.enums.ChatHistoryMessageTypeEnum;
 import com.wang.wangaicodegenerator.model.vo.AppVO;
 import com.wang.wangaicodegenerator.model.vo.UserVO;
+import com.wang.wangaicodegenerator.monitor.MonitorContext;
 import com.wang.wangaicodegenerator.monitor.MonitorContextHolder;
 import com.wang.wangaicodegenerator.service.AppService;
 import com.wang.wangaicodegenerator.service.ChatHistoryService;
@@ -168,7 +169,13 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         ThrowUtils.throwIf(codeGenTypeEnum == null, ErrorCode.PARAMS_ERROR, "不支持生成该类型代码");
         //5、通过校验后，添加用户消息到对话历史
         chatHistoryService.addChatMessage(appId, message, ChatHistoryMessageTypeEnum.USER.getValue(), loginUser.getId());
-        //6、根据agent参数选择生成方式
+        //6、创建监控上下文
+        MonitorContextHolder.setContext(
+                MonitorContext.builder()
+                        .userId(loginUser.getId().toString())
+                        .appId(appId.toString())
+                        .build());
+        //7、根据agent参数选择生成方式
         Flux<String> codeStream;
         if (agent){
             //Agent模式：使用工作流生成代码

@@ -28,3 +28,11 @@ scrape_configs:
       - targets: ['localhost:8124']  # 应用服务器地址
     scrape_interval: 10s  # 每 10 秒抓取一次
     scrape_timeout: 10s   # 抓取超时时间
+
+ ## 运行命令
+ # ./prometheus --config.file=<配置文件路径>
+  # 示例 Linux
+ # ./prometheus --config.file=D:\code\wang-ai-code-generator\prometheus.yml
+  # 示例 Windows
+ #    prometheus.exe --config.file=D:\code\wang-ai-code-generator\prometheus.yml
+

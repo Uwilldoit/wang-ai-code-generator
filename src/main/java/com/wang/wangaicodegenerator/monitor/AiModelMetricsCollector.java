@@ -14,7 +14,7 @@ import java.util.concurrent.ConcurrentMap;
 /**
  * @author: Fugitive Mr.Wang
  * @createTime: 2025/8/24---10:56
- * @description: 指标收集器
+ * @description: 指标收集器,分别统计请求次数、错误次数、Token消耗、响应时间
  */
 
 @Component
